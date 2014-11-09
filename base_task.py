@@ -55,3 +55,10 @@ class BaseTask(object):
         node_b = self.all_nodes[b]
 
         return sqrt(pow((node_a.x-node_b.x), 2) + pow((node_a.y-node_b.y), 2))
+
+    def get_path_distance(self, path):
+        distance = 0
+        for i in xrange(1, len(path)):
+            distance += self.get_distance(path[i-1], path[i])
+
+        return distance
