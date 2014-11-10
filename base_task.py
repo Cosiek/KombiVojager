@@ -62,3 +62,17 @@ class BaseTask(object):
             distance += self.get_distance(path[i-1], path[i])
 
         return distance
+
+    def pop_closest_to(self, origin, nodes):
+        distance = float('inf')
+
+        i = 0
+        closest_idx = 0
+        for node_name in nodes:
+            d = self.get_distance(origin, node_name)
+            if d < distance:
+                distance = d
+                closest_idx = i
+            i += 1
+
+        return nodes.pop(closest_idx)

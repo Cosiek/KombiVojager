@@ -29,15 +29,4 @@ class NaiveSolver(BaseSolver):
         return solution, distance, 1
 
     def pop_closest(self, last, mid_nodes):
-        distance = float('inf')
-
-        i = 0
-        closest_idx = 0
-        for node_name in mid_nodes:
-            d = self.task.get_distance(last, node_name)
-            if d < distance:
-                distance = d
-                closest_idx = i
-            i += 1
-
-        return mid_nodes.pop(closest_idx)
+        return self.task.pop_closest_to(last, mid_nodes)
