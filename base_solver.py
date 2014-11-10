@@ -3,6 +3,10 @@
 
 from datetime import datetime
 
+class RunSolverFirst(Exception):
+    pass
+
+
 class BaseSolver(object):
     task = None
 
@@ -27,7 +31,7 @@ class BaseSolver(object):
 
     def get_summary(self):
         if self.best_solution is None:
-            return u'Run the solver first'
+            raise RunSolverFirst(u'Run the solver first')
 
         txt = (
             '========== {solver_name} ==========\n'
