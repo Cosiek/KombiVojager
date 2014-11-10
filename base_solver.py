@@ -24,3 +24,22 @@ class BaseSolver(object):
     def run_search(self):
         # dummy - this is where one should implement the algorithm
         pass
+
+    def get_summary(self):
+        if self.best_solution is None:
+            return u'Run the solver first'
+
+        txt = (
+            '========== {solver_name} ==========\n'
+            'run {cycles} cycles for: {search_time}\n'
+            'best found solution: {best_solution}\n'
+            'distance: {distance}\n'
+        )
+
+        return txt.format(
+            solver_name=str(self.__class__),
+            cycles=self.cycles,
+            search_time=self.search_time,
+            best_solution=self.best_solution,
+            distance=self.best_distance
+        )
