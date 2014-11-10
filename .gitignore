@@ -1,2 +1,4 @@
 # compiled/optimized Python code
 *.py[co]
+
+*.sqlite

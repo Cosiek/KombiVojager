@@ -47,3 +47,19 @@ class BaseSolver(object):
             best_solution=self.best_solution,
             distance=self.best_distance
         )
+
+    def save_solution(self, cursor):
+        # fail fast
+        if self.best_solution is None:
+            raise RunSolverFirst(u'Run the solver first')
+
+        sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?)'
+        input = (
+            str(self.__class__),
+            str(self.search_time),
+            str(self.cycles),
+            unicode(self.best_solution),
+            self.best_distance,
+        )
+
+        cursor.execute(sql, input)
