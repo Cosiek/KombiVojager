@@ -76,3 +76,17 @@ class BaseTask(object):
             i += 1
 
         return nodes.pop(closest_idx)
+
+    def pop_furthest_to(self, origin, nodes):
+        distance = 0
+
+        i = 0
+        closest_idx = 0
+        for node_name in nodes:
+            d = self.get_distance(origin, node_name)
+            if d > distance:
+                distance = d
+                closest_idx = i
+            i += 1
+
+        return nodes.pop(closest_idx)
