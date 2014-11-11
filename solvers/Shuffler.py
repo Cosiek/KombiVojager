@@ -4,7 +4,7 @@
 from base_solver import BaseSolver
 
 
-class ShuffleSolver(BaseSolver):
+class ShuffleClosestFirstSolver(BaseSolver):
     def run_search(self):
         mid_nodes = []
         for node in self.task.mid_nodes:
