@@ -6,7 +6,7 @@ from db_manage import connection, cursor
 
 from solvers.BruteForce import BruteForceSolver
 from solvers.Naive import NaiveSolver
-from solvers.Shuffler import ShuffleClosestFirstSolver
+from solvers.Shuffler import ShuffleClosestFirstSolver, ShuffleFurtherFirstSolver
 
 
 brutal = BruteForceSolver(task)
@@ -20,6 +20,11 @@ naive.save_solution(cursor)
 print naive.get_summary()
 
 shuffle = ShuffleClosestFirstSolver(task)
+shuffle.run()
+shuffle.save_solution(cursor)
+print shuffle.get_summary()
+
+shuffle = ShuffleFurtherFirstSolver(task)
 shuffle.run()
 shuffle.save_solution(cursor)
 print shuffle.get_summary()

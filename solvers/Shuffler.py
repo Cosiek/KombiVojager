@@ -39,3 +39,8 @@ class ShuffleClosestFirstSolver(BaseSolver):
 
     def pop_node(self, last, mid_nodes):
         return self.task.pop_closest_to(last, mid_nodes)
+
+
+class ShuffleFurtherFirstSolver(ShuffleClosestFirstSolver):
+    def pop_node(self, last, mid_nodes):
+        return self.task.pop_furthest_to(last, mid_nodes)
