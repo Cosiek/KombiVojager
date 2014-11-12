@@ -5,6 +5,8 @@ from base_solver import BaseSolver
 
 
 class ShuffleClosestFirstSolver(BaseSolver):
+    deterministic = True
+
     def run_search(self):
         mid_nodes = []
         for node in self.task.mid_nodes:

@@ -4,6 +4,8 @@
 from base_solver import BaseSolver
 
 class NaiveSolver(BaseSolver):
+    deterministic = True
+
     def run_search(self):
         # get list of mid nodes names
         mid_nodes = []

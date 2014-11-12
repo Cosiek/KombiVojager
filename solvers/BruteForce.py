@@ -6,6 +6,8 @@ from itertools import permutations
 from base_solver import BaseSolver
 
 class BruteForceSolver(BaseSolver):
+    deterministic = True
+
     def run_search(self):
         # get list of mid nodes names
         mid_nodes = []

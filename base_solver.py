@@ -53,13 +53,43 @@ class BaseSolver(object):
         if self.best_solution is None:
             raise RunSolverFirst(u'Run the solver first')
 
-        sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?)'
-        input = (
-            str(self.__class__),
-            str(self.search_time),
-            str(self.cycles),
-            unicode(self.best_solution),
-            self.best_distance,
-        )
+        # if solver is deterministic - keep only one record in db
+        insert_new_record = True
+        if getattr(self, 'deterministic', False):
+            # check if record for this solver already exists
+            cursor.execute(
+                    'SELECT * FROM solver_runs WHERE solver=?',
+                    (str(self.__class__),))
+
+            # if it does - overwrite it (might be updated solution)
+            if cursor.fetchone():
+                sql = ('UPDATE solver_runs SET '
+                       'time=?, '
+                       'cycles=?, '
+                       'solution=?, '
+                       'distance=? '
+                       'WHERE solver=?'
+                )
+
+                input = (
+                    str(self.search_time),
+                    str(self.cycles),
+                    unicode(self.best_solution),
+                    self.best_distance,
+                    str(self.__class__),
+                )
+
+                insert_new_record = False
+
+        if insert_new_record:
+            sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?)'
+
+            input = (
+                str(self.__class__),
+                str(self.search_time),
+                str(self.cycles),
+                unicode(self.best_solution),
+                self.best_distance,
+            )
 
         cursor.execute(sql, input)
