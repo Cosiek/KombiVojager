@@ -1,33 +1,38 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from tasks import task
+import pkgutil
+
+from base_solver import BaseSolver
 from db_manage import connection, cursor
-
-from solvers.BruteForce import BruteForceSolver
-from solvers.Naive import NaiveSolver
-from solvers.Shuffler import ShuffleClosestFirstSolver, ShuffleFurtherFirstSolver
+from tasks import task
 
 
-brutal = BruteForceSolver(task)
-brutal.run()
-brutal.save_solution(cursor)
-print brutal.get_summary()
+def run_solver(solver_class, task):
+    """ Run solver for given task """
+    solver = solver_class(task)
+    solver.run()
+    solver.save_solution(cursor)
+    print solver.get_summary()
 
-naive = NaiveSolver(task)
-naive.run()
-naive.save_solution(cursor)
-print naive.get_summary()
 
-shuffle = ShuffleClosestFirstSolver(task)
-shuffle.run()
-shuffle.save_solution(cursor)
-print shuffle.get_summary()
+# iterate over solvers package to find classes of solvers
+for module_tuple in pkgutil.iter_modules(['solvers']):
+    module = __import__('solvers.' + module_tuple[1], fromlist=[''])
 
-shuffle = ShuffleFurtherFirstSolver(task)
-shuffle.run()
-shuffle.save_solution(cursor)
-print shuffle.get_summary()
+    for name in dir(module):
+        # skip private attributes
+        if name.startswith('__'):
+            continue
 
+        stuf = getattr(module, name)
+        # if something has 'a_solver' attr set to true, assume it is a solver
+        # and run it on task. Since BaseSolver also has 'a_solver' set to true
+        # it needs to be excluded.
+        if getattr(stuf, 'a_solver', False) and not stuf==BaseSolver:
+            run_solver(stuf, task)
+
+
+# commit and let go of db
 connection.commit()
 connection.close()

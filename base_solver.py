@@ -15,6 +15,8 @@ class BaseSolver(object):
     search_time = None
     cycles = 0
 
+    a_solver = True  # just to find solvrs easyer
+
     def __init__(self, task):
         self.task = task
 
