@@ -16,6 +16,7 @@ if not cursor.fetchone():
     sql = ('CREATE  TABLE "main"."solver_runs" '
             '("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, '
             '"solver" TEXT, '
+            '"task" TEXT, '
             '"time" TEXT, '
             '"cycles" INTEGER, '
             '"solution" TEXT, '

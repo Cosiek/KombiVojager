@@ -4,6 +4,7 @@
 from base_task import BaseTask, Node
 
 task_data = {
+    'name': 'first_test_runs_task',
     'start': Node('A', 0, 0),
     'finish': Node('Z', 500, 500),
     'mid_nodes': [

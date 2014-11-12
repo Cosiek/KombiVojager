@@ -58,8 +58,8 @@ class BaseSolver(object):
         if getattr(self, 'deterministic', False):
             # check if record for this solver already exists
             cursor.execute(
-                    'SELECT * FROM solver_runs WHERE solver=?',
-                    (str(self.__class__),))
+                    'SELECT * FROM solver_runs WHERE solver=? AND task=?',
+                    (str(self.__class__), self.task.name))
 
             # if it does - overwrite it (might be updated solution)
             if cursor.fetchone():
@@ -68,7 +68,8 @@ class BaseSolver(object):
                        'cycles=?, '
                        'solution=?, '
                        'distance=? '
-                       'WHERE solver=?'
+                       'WHERE solver=? '
+                       'AND task=?'
                 )
 
                 input = (
@@ -77,15 +78,17 @@ class BaseSolver(object):
                     unicode(self.best_solution),
                     self.best_distance,
                     str(self.__class__),
+                    self.task.name,
                 )
 
                 insert_new_record = False
 
         if insert_new_record:
-            sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?)'
+            sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?, ?)'
 
             input = (
                 str(self.__class__),
+                self.task.name,
                 str(self.search_time),
                 str(self.cycles),
                 unicode(self.best_solution),
