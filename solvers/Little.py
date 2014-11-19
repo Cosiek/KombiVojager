@@ -8,65 +8,237 @@ from base_solver import BaseSolver
 
 INF = float('inf')
 
+
+class State(object):
+    array = []
+    row_reference = []
+    col_reference = []
+    lower_band = 0
+    parent = None
+
+    deleted_arc = None
+
+    is_active = True
+
+    def __init__(self, **kwargs):
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+
+
 class LittleSolver(BaseSolver):
     deterministic = True
 
     def run_search(self):
-        # prepare cost array
-        reference, work_array = self.prepare_cost_array()
+        # prepare initial data
+        reference, cost_array = self.prepare_cost_array()
+        initial_data = {
+            'array': cost_array,
+            'row_reference': reference,
+            'col_reference': deepcopy(reference),
+        }
 
-        # arrays for reference (keeping names of nodes)
-        row_reference = reference
-        col_reference = deepcopy(reference)
+        # set initial state
+        initial = State(**initial_data)
+        states = [initial,]
+        active_states = states
 
-        # strip down array until it's 2x2 sized
-        removed_pairs = []
+        # start search
         cycles = 0
-        while len(work_array) > 2:
-            # substract row
-            self.reduce_rows(work_array)
-            # substract column
-            self.reduce_columns(work_array)
+        best_lower_band = INF
 
-            # find smallest in row (except 0 if only one)
-            smallest_in_rows = self.get_smallest_in_rows(work_array)
-            # find smallest in column (except 0 if only one)
-            smallest_in_cols = self.get_smallest_in_columns(work_array)
-
-            # get biggest of them all
-            big = max(max(smallest_in_rows), max(smallest_in_cols))
-
-            # find column and/or row that has a 0 and biggest in it
-            row_idx, col_idx = self.find_indexes_for_reduction(
-                    big, work_array)
-
-            # put inf on this column and row crossing
-            work_array[col_idx][row_idx] = INF
-
-            # remove this column and row
-            self.remove_column(col_idx, work_array)
-            self.remove_row(row_idx, work_array)
-
-            # remember delated arc
-            removed_pairs.append(
-                    [row_reference.pop(row_idx), col_reference.pop(col_idx)]
-            )
-
+        while active_states:
+            # rebuild a list of active states
+            active_states = [state for state in states if state.is_active]
             cycles += 1
 
-        # add missing arcs, based on current work array
-        removed_pairs.append(
-                self.get_missing_pair(work_array, row_reference, col_reference))
-        removed_pairs.append((row_reference.pop(), col_reference.pop()))
+            # get state with lowest lower band
+            active_states.sort(key=lambda x: x.lower_band)
+            state = active_states[0]
 
-        # combine arcs into a route
-        route = self.combine_into_a_route(removed_pairs)
+            # check if it has the anwser
+            if len(state.array) == 2:
+                state.is_active = False
+                break
 
-        # calculate route distance
-        distance = self.task.get_path_distance(route)
+            # divide it further
+            substates = self.divide_state(state)
 
-        return route, distance, cycles
+            if len(substates[0].array) == 2:
+                state = substates[0]
+                break
 
+            # update best found lower band
+            best_lower_band = min(best_lower_band, state.lower_band)
+
+            # add new states to list
+            states.extend(substates)
+
+            # mark state as inactive
+            state.is_active = False
+
+        arcs = self.get_last_arcs_from_final_state(state)
+
+        while state:
+            if state.deleted_arc:
+                arcs.append(state.deleted_arc)
+            state = state.parent
+
+        solution = self.combine_into_a_route(arcs)
+        distance = self.task.get_path_distance(solution)
+
+        return solution, distance, cycles
+
+    def divide_state(self, state):
+        # prepare
+        array = deepcopy(state.array)
+
+        row_reference = deepcopy(state.row_reference)
+        col_reference = deepcopy(state.col_reference)
+
+        lower_band_a = state.lower_band
+
+        # standarize array
+        lower_band_a += self.reduce_rows(array)
+        lower_band_a += self.reduce_columns(array)
+
+        lower_band_b = lower_band_a
+
+        # find 0 cell with largest cost of removal
+        lb, cell_cords = self.find_cell_for_removal(array)
+        lower_band_b += lb
+
+        # remove coresponding cells from references
+        # they will be attached to state a as arc to follow
+        node1 = row_reference.pop(cell_cords[0])
+        node2 = col_reference.pop(cell_cords[1])
+
+        # remove cell
+        self.remove_row(cell_cords[0], array)
+        self.remove_column(cell_cords[1], array)
+
+        # block returning path
+        self.block_sub_cycles(array, node1, node2, col_reference,
+                row_reference, state)
+
+        # calculate new lower band for the array with deleted cell
+        lower_band_a += self.reduce_rows(array)
+        lower_band_a += self.reduce_columns(array)
+
+        # prepare array for state that rejects found arc
+        state_b_array = deepcopy(state.array)
+        state_b_array[cell_cords[0]][cell_cords[1]] = self.get_big_number(
+                state.array)
+
+        # generate states
+        state_a = State(array=array, row_reference=row_reference,
+                col_reference=col_reference, lower_band=lower_band_a,
+                parent=state, deleted_arc=(node1, node2))
+        state_b = State(array=state_b_array,
+                row_reference=deepcopy(state.row_reference),
+                col_reference=deepcopy(state.col_reference),
+                lower_band=lower_band_b, parent=state)
+
+        return state_a, state_b
+
+    def block_sub_cycles(self, array, node1, node2, col_reference,
+            row_reference, state):
+        # get all included arcs from parent states
+        arcs = []
+        parent = state
+        while parent:
+            if parent.deleted_arc:
+                arcs.append(parent.deleted_arc)
+            parent = parent.parent
+
+        # combine arcs into subroutes
+        def combine_arcs(base_arc, arcs):
+            route = list(base_arc)
+            while arcs:
+                break_out = True
+                for i, arc in enumerate(arcs):
+                    if arc[0] == route[-1]:
+                        route.append(arc[1])
+                        break_out = False
+                        del arcs[i]
+                    elif arc[1] == route[0]:
+                        route.insert(0, arc[0])
+                        break_out = False
+                        del arcs[i]
+
+                if break_out:
+                    break
+
+            return route
+
+        subroutes = []
+        while arcs:
+            arc = arcs.pop()
+            subroutes.append(combine_arcs(arc, arcs))
+
+        # block return path of every subroute
+        for subroute in subroutes:
+            try:
+                start_idx = col_reference.index(subroute[0])
+                end_idx = row_reference.index(subroute[-1])
+                array[end_idx][start_idx] = INF
+            except ValueError:
+                pass
+
+
+    def find_cell_for_removal(self, array):
+        cell_cords = (0, 0)
+        max_cost = 0
+
+        for i, row in enumerate(array):
+            for j, value in enumerate(row):
+                if value == 0:
+                    cost = self.get_min_except_one_0(row)
+                    col = [r[j] for r in array]
+                    cost += self.get_min_except_one_0(col)
+
+                    if cost > max_cost:
+                        max_cost = cost
+                        cell_cords = (i, j)
+
+        return max_cost, cell_cords
+
+    def get_min_except_one_0(self, array):
+        result = INF
+        zero_found = False
+        for v in array:
+            if v != 0:
+                result = min(result, v)
+            elif v == 0 and zero_found:
+                result = 0
+                break
+            else:
+                zero_found = True
+        return result
+
+    def get_last_arcs_from_final_state(self, state):
+        # get last two arcs from state with 2x2 array
+        col_idx_1 = state.array[0].index(0)
+        col_idx_2 = state.array[1].index(0)
+
+        arc_1 = state.row_reference[0], state.col_reference[col_idx_1]
+        arc_2 = state.row_reference[1], state.col_reference[col_idx_2]
+
+        return [arc_1, arc_2]
+
+    def combine_into_a_route(self, arcs):
+        route = [self.task.start.name, ]
+
+        while len(route) < len(arcs):
+            for arc in arcs:
+                if arc[0] == route[-1]:
+                    route.append(arc[1])
+                    break
+
+        return route
+
+    def get_big_number(self, array):
+        # retutn sum of all positive, non infiniet numbers in array
+        return sum(sum([i for i in row if i > 0 and i < INF]) for row in array) + 1
 
     def prepare_cost_array(self):
         # get nodes names
@@ -101,81 +273,7 @@ class LittleSolver(BaseSolver):
             lb += m
             for row in array:
                 row[i] -= m
-
         return lb
-
-    def get_smallest_in_rows(self, array):
-        # use 0 only if present more then once in row
-        smallest_list = []
-
-        # fill list of smallest values in each row
-        for row in array:
-            zero_found = False
-            smallest = INF
-            for cell in row:
-                if cell == 0 and zero_found:
-                    smallest = 0
-                    break
-                elif cell == 0:
-                    zero_found = True
-                elif cell < smallest:
-                    smallest = cell
-
-            smallest_list.append(smallest)
-
-        return smallest_list
-
-    def get_smallest_in_columns(self, array):
-        # use 0 only if present more then once in column
-        smallest_list = []
-
-        # fill list of smallest values in each column
-        for i in range(len(array)):
-            col = [row[i] for row in array]
-            zero_found = False
-            smallest = INF
-            for cell in col:
-                if cell == 0 and zero_found:
-                    smallest = 0
-                    break
-                elif cell == 0:
-                    zero_found = True
-                elif cell < smallest:
-                    smallest = cell
-
-            smallest_list.append(smallest)
-
-        return smallest_list
-
-    def find_indexes_for_reduction(self, big, work_array):
-        # find row_idx, col_idx pairs for cells that contain big value
-        pairs = self.find_cells_of_value(big, work_array)
-
-        # for each pair find first column or row that has a 0 in it
-        row_idx = None
-        col_idx = None
-        for row_idx, col_idx in pairs:
-            # check column
-            for i in range(len(work_array)):
-                if work_array[i][col_idx] == 0:
-                    row_idx = i
-                    break
-
-            # check row
-            if 0 in work_array[row_idx]:
-                col_idx = work_array[row_idx].index(0)
-                break
-
-        return row_idx, col_idx
-
-    def find_cells_of_value(self, val, array):
-        result = []
-        for row_idx, row in enumerate(array):
-            for col_idx, cell_val in enumerate(row):
-                if cell_val == val:
-                    result.append((row_idx, col_idx))
-
-        return result
 
     def remove_column(self, col_idx, array):
         for row in array:
@@ -183,23 +281,3 @@ class LittleSolver(BaseSolver):
 
     def remove_row(self, row_idx, array):
         del array[row_idx]
-
-    def get_missing_pair(self, array, row_reference, col_reference):
-        for i, row in enumerate(array):
-            if 0 in row:
-                row_idx = row_reference.pop(i)
-                col_idx = col_reference.pop(row.index(0))
-
-        return row_idx, col_idx
-
-    def combine_into_a_route(self, pairs):
-        route = [self.task.start.name, ]
-
-        while len(route) < len(pairs):
-            for pair in pairs:
-                if pair[0] == route[-1]:
-                    route.append(pair[1])
-                    break
-
-        return route
-
