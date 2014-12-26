@@ -25,10 +25,13 @@ class BaseTask(object):
 
     # helper data (calculated)
     all_nodes = {}
+    is_circle = None
 
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, key, val)
+
+        self.is_circle = self.start == self.finish
 
         self.prepare_data()
 

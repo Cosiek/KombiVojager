@@ -39,6 +39,12 @@ class LittleSolver(BaseSolver):
 
         # set initial state
         initial = State(**initial_data)
+
+        # check if route should end at the same spot it began...
+        if not self.task.is_circle:
+            # ... and adjust initial state if it isn't
+            self.non_circle_initial_state(initial)
+
         states = [initial,]
         active_states = states
 
@@ -256,6 +262,26 @@ class LittleSolver(BaseSolver):
             array[pair[0]][pair[1]] = self.task.get_distance(node_a, node_b)
 
         return reference, array
+
+    def non_circle_initial_state(self, state):
+        """
+        Adjust initial state as if arc finish -> start ia already selected
+        """
+        start = self.task.start.name
+        end = self.task.finish.name
+        # set states deleted_arc
+        state.deleted_arc = (end, start)
+        # get indexes of start and end nodes
+        start_idx = state.col_reference.index(start)
+        end_idx = state.row_reference.index(end)
+        # delete nodes from references
+        state.col_reference.pop(start_idx)
+        state.row_reference.pop(end_idx)
+        # block start > connection
+        state.array[start_idx][end_idx] = INF
+        # delete column and row from states array
+        self.remove_row(end_idx, state.array)
+        self.remove_column(start_idx, state.array)
 
     def reduce_rows(self, array):
         lb = 0
