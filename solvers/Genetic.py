@@ -74,6 +74,14 @@ class Solution(object):
         self.route = route
         self.fixed = True
 
+    def evaluate(self, task):
+        start = task.start.name
+        finish = task.finish.name
+        if not self.evaluated:
+            route = [start, ] + self.route + [finish, ]
+            self.score = task.get_path_distance(route)
+            self.evaluated = True
+
 
 class GeneticSolver(BaseSolver):
     deterministic = False
@@ -140,26 +148,8 @@ class GeneticSolver(BaseSolver):
 
         return population
 
-    def evaluate_solutions(self):
-        start = self.task.start.name
-        finish = self.task.finish.name
-        for solution in self.population:
-            if not solution.evaluated:
-                route = [start, ] + solution.route + [finish, ]
-                solution.score = self.task.get_path_distance(route)
-                solution.evaluated = True
-
     def continue_(self):
         return self.generation <= 100
-
-    def fix_solutions(self):
-        for solution in self.population:
-            solution.fix(self.task, self.chromosomes)
-
-    def mutation(self):
-        for solution in self.population:
-            if self.mutation_ratio >= random():
-                solution.mutation()
 
     def crossing(self):
         # the shorter is solutions route, the more probable that it will
@@ -190,3 +180,16 @@ class GeneticSolver(BaseSolver):
 
         # update population with new solutions
         self.population.extend(new_generation)
+
+    def mutation(self):
+        for solution in self.population:
+            if self.mutation_ratio >= random():
+                solution.mutation()
+
+    def fix_solutions(self):
+        for solution in self.population:
+            solution.fix(self.task, self.chromosomes)
+
+    def evaluate_solutions(self):
+        for solution in self.population:
+            solution.evaluate(self.task)
