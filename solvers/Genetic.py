@@ -13,6 +13,9 @@ class Solution(object):
     route = []
     score = INF
 
+    fixed = False
+    evaluated = False
+
     def __init__(self, route):
         self.route = route
 
@@ -34,8 +37,13 @@ class Solution(object):
     def mutation(self):
         node = self.route.pop(randint(0, len(self.route) - 1))
         self.route.insert(randint(0, len(self.route)), node)
+        self.evaluated = False
 
     def fix(self, task, mid_nodes):
+        # don't fix solution multiple times
+        if self.fixed:
+            return
+
         # prepare helper sets
         route_set = set(self.route)
         missing = mid_nodes - route_set
@@ -64,6 +72,7 @@ class Solution(object):
             route = best_route[1:-1]
 
         self.route = route
+        self.fixed = True
 
 
 class GeneticSolver(BaseSolver):
@@ -135,8 +144,10 @@ class GeneticSolver(BaseSolver):
         start = self.task.start.name
         finish = self.task.finish.name
         for solution in self.population:
-            route = [start, ] + solution.route + [finish, ]
-            solution.score = self.task.get_path_distance(route)
+            if not solution.evaluated:
+                route = [start, ] + solution.route + [finish, ]
+                solution.score = self.task.get_path_distance(route)
+                solution.evaluated = True
 
     def continue_(self):
         return self.generation <= 100
