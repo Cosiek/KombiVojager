@@ -135,7 +135,10 @@ class GeneticSolver(BaseSolver):
 
             self.generation += 1
 
-        return best_route, best_score, self.generation
+        route = ([self.task.start.name, ] +
+                best_route + [self.task.finish.name, ])
+
+        return route, best_score, self.generation
 
     def generate_initial_population(self, chromosomes):
         population = []
