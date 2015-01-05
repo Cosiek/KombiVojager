@@ -21,6 +21,8 @@ class NaiveSolver(BaseSolver):
             closest = self.pop_closest(solution[-1], mid_nodes)
             solution.append(closest)
 
+            self.check_timeout()
+
         # add start and finish to solution
         solution.append(self.task.finish.name)
         solution.insert(0, self.task.start.name)

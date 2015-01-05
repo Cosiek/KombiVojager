@@ -82,6 +82,8 @@ class LittleSolver(BaseSolver):
             # mark state as inactive
             state.is_active = False
 
+            self.check_timeout()
+
         arcs = self.get_last_arcs_from_final_state(state)
 
         while state:

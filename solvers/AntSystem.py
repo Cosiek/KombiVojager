@@ -101,6 +101,7 @@ class AntSystemSolver(BaseSolver):
 
             self.cycles += 1
 
+            self.check_timeout()
 
         route = ([self.task.start.name] + self.best_route +
                 [self.task.finish.name])
@@ -157,3 +158,11 @@ class AntSystemSolver(BaseSolver):
             if ant.score < self.best_score:
                 self.best_score = ant.score
                 self.best_route = ant.route
+
+    def handle_timeout(self):
+        # this alghoritm might produce a solution even if it was timedout
+        self.cycles = self.cycles
+        route = ([self.task.start.name] + self.best_route +
+                [self.task.finish.name])
+        self.best_solution = route
+        self.best_distance = self.best_score

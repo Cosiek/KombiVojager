@@ -37,6 +37,8 @@ class ShuffleClosestFirstSolver(BaseSolver):
             # apply node to solution at given index
             solution.insert(idx, node)
 
+            self.check_timeout()
+
         return solution, distance, cycles
 
     def pop_node(self, last, mid_nodes):

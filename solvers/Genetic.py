@@ -97,8 +97,8 @@ class GeneticSolver(BaseSolver):
         # prepare data
         self.generation = 0
 
-        best_score = INF
-        best_route = None
+        self.best_score = INF
+        self.best_route = None
 
         self.chromosomes = set([mn.name for mn in self.task.mid_nodes])
 
@@ -129,16 +129,18 @@ class GeneticSolver(BaseSolver):
             self.population = self.population[:self.population_count]
 
             # update best
-            if self.population[0].score < best_score:
+            if self.population[0].score < self.best_score:
                 best = self.population[0]
-                best_score, best_route = best.score, best.route[:]
+                self.best_score, self.best_route = best.score, best.route[:]
 
             self.generation += 1
 
-        route = ([self.task.start.name, ] +
-                best_route + [self.task.finish.name, ])
+            self.check_timeout()
 
-        return route, best_score, self.generation
+        route = ([self.task.start.name, ] +
+                self.best_route + [self.task.finish.name, ])
+
+        return route, self.best_score, self.generation
 
     def generate_initial_population(self, chromosomes):
         population = []
@@ -196,3 +198,11 @@ class GeneticSolver(BaseSolver):
     def evaluate_solutions(self):
         for solution in self.population:
             solution.evaluate(self.task)
+
+    def handle_timeout(self):
+        # this alghoritm might produce a solution even if it was timedout
+        self.cycles = self.generation
+        route = ([self.task.start.name, ] +
+                self.best_route + [self.task.finish.name, ])
+        self.best_solution = route
+        self.best_distance = self.best_score
