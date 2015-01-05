@@ -44,25 +44,6 @@ class BaseSolver(object):
         # this should include calls to self.check_timeout
         pass
 
-    def get_summary(self):
-        if self.best_solution is None:
-            raise RunSolverFirst(u'Run the solver first')
-
-        txt = (
-            '========== {solver_name} ==========\n'
-            'run {cycles} cycles for: {search_time}\n'
-            'best found solution: {best_solution}\n'
-            'distance: {distance}\n'
-        )
-
-        return txt.format(
-            solver_name=str(self.__class__),
-            cycles=self.cycles,
-            search_time=self.search_time,
-            best_solution=self.best_solution,
-            distance=self.best_distance
-        )
-
     def check_timeout(self):
         if self.time_to_get_out:
             if self.time_to_get_out < datetime.now():
@@ -79,9 +60,43 @@ class BaseSolver(object):
         self.best_solution = []
         self.best_distance = INF
 
+    def get_summary(self):
+        if self.best_solution is None and not self.timedout:
+            raise RunSolverFirst(u'Run the solver first')
+
+        if self.timedout and self.best_solution:
+            txt = (
+                '========== {solver_name} ==========\n'
+                '*            TIMEDOUT            *\n'
+                'run {cycles} cycles for: {search_time}\n'
+                'best found solution: {best_solution}\n'
+                'distance: {distance}\n'
+            )
+        elif self.timedout:
+            txt = (
+                '========== {solver_name} ==========\n'
+                'TIMEDOUT after {search_time}\n'
+
+            )
+        else:
+            txt = (
+                '========== {solver_name} ==========\n'
+                'run {cycles} cycles for: {search_time}\n'
+                'best found solution: {best_solution}\n'
+                'distance: {distance}\n'
+            )
+
+        return txt.format(
+            solver_name=str(self.__class__),
+            cycles=self.cycles,
+            search_time=self.search_time,
+            best_solution=self.best_solution,
+            distance=self.best_distance
+        )
+
     def save_solution(self, cursor):
         # fail fast
-        if self.best_solution is None:
+        if self.best_solution is None and not self.timedout:
             raise RunSolverFirst(u'Run the solver first')
 
         # if solver is deterministic - keep only one record in db
