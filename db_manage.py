@@ -20,7 +20,8 @@ if not cursor.fetchone():
             '"time" TEXT, '
             '"cycles" INTEGER, '
             '"solution" TEXT, '
-            '"distance" FLOAT'
+            '"distance" FLOAT, '
+            '"timedout" BOOL NOT NULL DEFAULT 0'
            ')'
     )
 

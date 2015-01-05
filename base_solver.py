@@ -98,7 +98,8 @@ class BaseSolver(object):
                        'time=?, '
                        'cycles=?, '
                        'solution=?, '
-                       'distance=? '
+                       'distance=?, '
+                       'timedout=? '
                        'WHERE solver=? '
                        'AND task=?'
                 )
@@ -108,6 +109,7 @@ class BaseSolver(object):
                     str(self.cycles),
                     unicode(self.best_solution),
                     self.best_distance,
+                    self.timedout,
                     str(self.__class__),
                     self.task.name,
                 )
@@ -115,7 +117,7 @@ class BaseSolver(object):
                 insert_new_record = False
 
         if insert_new_record:
-            sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?, ?)'
+            sql = 'INSERT INTO solver_runs VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)'
 
             input = (
                 str(self.__class__),
@@ -124,6 +126,7 @@ class BaseSolver(object):
                 str(self.cycles),
                 unicode(self.best_solution),
                 self.best_distance,
+                self.timedout,
             )
 
         cursor.execute(sql, input)
