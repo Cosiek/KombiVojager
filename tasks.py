@@ -16,6 +16,10 @@ task_data = {
         Node('G', 150, 400),
         Node('H', 350, 150),
     ],
+    'distances': {
+        'A:B': 10,
+    },
+    'timeout': 1,
 }
 
 task = BaseTask(**task_data)

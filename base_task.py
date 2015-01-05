@@ -18,6 +18,8 @@ class BaseTask(object):
     mid_nodes = []
     name = 'base'
 
+    timeout = None
+
     # distances can be passed, but all missing distances will be calculated
     # uses keys like 'start_node_name:end_node_name'
     # (so no ':' in node names!)

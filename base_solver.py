@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from helpers import TimeoutError, INF
+
 
 class RunSolverFirst(Exception):
     pass
@@ -15,20 +18,30 @@ class BaseSolver(object):
     search_time = None
     cycles = 0
 
-    a_solver = True  # just to find solvrs easyer
+    a_solver = True  # just to find solvrs easier
+
+    # timeout related
+    timedout = False
+
+    time_to_get_out = None
+    start_time = None
 
     def __init__(self, task):
         self.task = task
 
     def run(self):
-        start_time = datetime.now()
-        self.best_solution, self.best_distance, self.cycles = self.run_search()
+        self.start_time = datetime.now()
+        try:
+            self.best_solution, self.best_distance, self.cycles = self.run_search()
+        except TimeoutError:
+            self.handle_timeout()
         finish_time = datetime.now()
 
-        self.search_time = finish_time - start_time
+        self.search_time = finish_time - self.start_time
 
     def run_search(self):
         # dummy - this is where one should implement the algorithm
+        # this should include calls to self.check_timeout
         pass
 
     def get_summary(self):
@@ -49,6 +62,22 @@ class BaseSolver(object):
             best_solution=self.best_solution,
             distance=self.best_distance
         )
+
+    def check_timeout(self):
+        if self.time_to_get_out:
+            if self.time_to_get_out < datetime.now():
+                self.timedout = True
+                raise TimeoutError
+        elif self.task.timeout:
+            self.time_to_get_out = self.start_time + timedelta(
+                    seconds=self.task.timeout)
+
+    def handle_timeout(self):
+        # this can vary a lot between diffrent algorithms
+        # (it may be usefull to get best solution found till now)
+        self.cycles = 0
+        self.best_solution = []
+        self.best_distance = INF
 
     def save_solution(self, cursor):
         # fail fast
