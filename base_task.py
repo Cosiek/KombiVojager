@@ -4,6 +4,11 @@
 from itertools import permutations
 from math import sqrt, pow
 
+
+class AssertRouteError(Exception):
+    pass
+
+
 class Node(object):
     def __init__(self, name, x, y):
         self.name = name
@@ -96,3 +101,33 @@ class BaseTask(object):
             i += 1
 
         return nodes.pop(closest_idx)
+
+    def verify_route(self, route):
+        # verify start node
+        if route[0] != self.start.name:
+            raise AssertRouteError(
+                    u"Start node of route doesn't match one from task")
+
+        # verify finish node
+        if route[-1] != self.finish.name:
+            raise AssertRouteError(
+                    u"Finish node of route doesn't match one from task")
+
+        # verify if there are any repeted nodes on route
+        route_as_set = set(route)
+        if (self.start.name != self.finish.name and
+                len(route_as_set) != len(route)):
+            raise AssertRouteError(u'Some nodes on route are repeted')
+        elif len(route_as_set) != len(route):
+            raise AssertRouteError(u'Some nodes on route are repeted')
+
+        # verify if all mid nodes are included
+        nodes_as_set = set([n.name for n in self.mid_nodes])
+        nodes_as_set.add(self.start.name)
+        nodes_as_set.add(self.finish.name)
+
+        if nodes_as_set - route_as_set:
+            raise AssertRouteError(u'Some nodes are missing from the route')
+
+        if route_as_set - nodes_as_set:
+            raise AssertRouteError(u'Unknown nodes are included to the route')

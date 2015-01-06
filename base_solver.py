@@ -36,8 +36,9 @@ class BaseSolver(object):
         except TimeoutError:
             self.handle_timeout()
         finish_time = datetime.now()
-
         self.search_time = finish_time - self.start_time
+
+        self.task.verify_route(self.best_solution)
 
     def run_search(self):
         # dummy - this is where one should implement the algorithm
