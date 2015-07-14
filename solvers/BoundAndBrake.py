@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from collections import deque
-from copy import deepcopy
-from itertools import permutations
 from random import shuffle
 
 from base_solver import BaseSolver
@@ -15,21 +12,20 @@ class PartialSolution(object):
     lower_bound = INF
     upper_bound = INF
     partial_route = []
-    
+
     done = False
-    
+
     def __init__(self, partial_route=[]):
         self.partial_route = partial_route
 
     def build(self, task, ancestor, next_stop):
         self.partial_route = ancestor.partial_route[:]
         self.partial_route.insert(-1, next_stop)
-        self.partial_route
         self.lower_bound = task.get_path_distance(self.partial_route)
 
         upper_bound_route = (
-            self.partial_route[:-1] + 
-            list(set(task.all_nodes.keys()) - set(self.partial_route)) + 
+            self.partial_route[:-1] +
+            list(set(task.all_nodes.keys()) - set(self.partial_route)) +
             [self.partial_route[-1],]
         )
 
@@ -40,7 +36,7 @@ class PartialSolution(object):
 
 
 class BoundAndBrakeDeepFitstSearch(BaseSolver):
-    deterministic = False  # actually it's distance is deterministic, 
+    deterministic = False  # actually it's distance is deterministic,
                            # but time isn't.
 
     # helper
@@ -49,6 +45,10 @@ class BoundAndBrakeDeepFitstSearch(BaseSolver):
 
     def __init__(self, *args, **kwargs):
         super(BoundAndBrakeDeepFitstSearch, self).__init__(*args, **kwargs)
+        self.prepare_data()
+
+    def prepare_data(self):
+        self.task.node_names_set = set(self.task.all_nodes.keys())
 
     def run_search(self):
         self.current_best = self.get_random_solution()
@@ -58,7 +58,7 @@ class BoundAndBrakeDeepFitstSearch(BaseSolver):
         solution.lower_bound = self.current_score
 
         self.best_upper = solution
-        self.to_check = deque([solution,])
+        self.to_check = [solution,]
 
         self.traverse()
 
@@ -73,15 +73,14 @@ class BoundAndBrakeDeepFitstSearch(BaseSolver):
                 break
 
             # check if this solution is still worth checking
-            if not (solution.lower_bound <= self.current_score 
-                    and solution.lower_bound < self.best_upper.upper_bound):
+            if not self.is_worth_traversing(solution):
                 # if not, then continue...
                 continue
 
             self.cycles += 1
             partials = []
             # iterate over unused stops...
-            for stop in (set(self.task.all_nodes.keys()) - set(solution.partial_route)):
+            for stop in self.get_missing_stops(solution):
                 # and create partial solutions
                 partial = PartialSolution()
                 partial.build(self.task, solution, stop)
@@ -94,8 +93,7 @@ class BoundAndBrakeDeepFitstSearch(BaseSolver):
                         self.current_score = partial.lower_bound
                 # if solutions lower bound is lower then current_best, and lower
                 # then best partial solutions upper bound...
-                elif (partial.lower_bound < self.current_score 
-                        and partial.lower_bound < self.best_upper.upper_bound):
+                elif self.is_worth_traversing(partial):
                     # ...then add it to the list of potential best solutions
                     partials.append(partial)
                 # otherwise - forget about it
@@ -103,6 +101,13 @@ class BoundAndBrakeDeepFitstSearch(BaseSolver):
                     pass
             partials.sort(key=self.sort_key)
             self.to_check.extend(partials)
+
+    def is_worth_traversing(self, solution):
+        return (solution.lower_bound <= self.current_score
+                    and solution.lower_bound < self.best_upper.upper_bound)
+
+    def get_missing_stops(self, solution):
+        return self.task.node_names_set - set(solution.partial_route)
 
     def get_random_solution(self):
         route = [n.name for n in self.task.mid_nodes]
