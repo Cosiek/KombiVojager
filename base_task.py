@@ -35,6 +35,10 @@ class BaseTask(object):
     is_circle = None
 
     def __init__(self, **kwargs):
+        self.mid_nodes = []
+        self.all_nodes = {}
+        self.distances = {}
+
         for key, val in kwargs.items():
             setattr(self, key, val)
 
