@@ -63,7 +63,11 @@ class BaseTask(object):
 
     def get_distance(self, a, b):
         key = '%s:%s' % (a, b)
-        return self.distances.get(key) or self.calculate_distance(a, b)
+        dist = self.distances.get(key)
+        if dist is None:
+            dist = self.calculate_distance(a, b)
+            self.distances[key] = dist
+        return dist
 
     def calculate_distance(self, a, b):
         node_a = self.all_nodes[a]
