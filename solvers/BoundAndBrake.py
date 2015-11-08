@@ -23,15 +23,16 @@ class PartialSolution(object):
         self.partial_route.insert(-1, next_stop)
         self.lower_bound = task.get_path_distance(self.partial_route)
 
-        upper_bound_route = (
-            self.partial_route[:-1] +
-            list(set(task.all_nodes.keys()) - set(self.partial_route)) +
-            [self.partial_route[-1],]
-        )
-
-        self.upper_bound = task.get_path_distance(upper_bound_route)
-
-        if self.lower_bound == self.upper_bound:
+        missing_nodes = list(set(task.all_nodes.keys()) - set(self.partial_route))
+        if missing_nodes:
+            upper_bound_route = (
+                self.partial_route[:-1] +
+                missing_nodes +
+                [self.partial_route[-1],]
+            )
+            self.upper_bound = task.get_path_distance(upper_bound_route)
+        else:
+            self.upper_bound = self.lower_bound
             self.done = True
 
 
