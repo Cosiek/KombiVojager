@@ -110,7 +110,7 @@ class BaseTask(object):
 
         return nodes.pop(closest_idx)
 
-    def verify_route(self, route):
+    def verify_route(self, route, solver=None):
         # verify start node
         if route[0] != self.start.name:
             raise AssertRouteError(
@@ -135,7 +135,7 @@ class BaseTask(object):
         nodes_as_set.add(self.finish.name)
 
         if nodes_as_set - route_as_set:
-            raise AssertRouteError(u'Some nodes are missing from the route')
+            raise AssertRouteError(u'Some nodes are missing from the route (%s)' % solver)
 
         if route_as_set - nodes_as_set:
             raise AssertRouteError(u'Unknown nodes are included to the route')
