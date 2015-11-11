@@ -9,6 +9,10 @@ class AssertRouteError(Exception):
     pass
 
 
+class AssertTaskDataError(Exception):
+    pass
+
+
 class Node(object):
     def __init__(self, name, x, y):
         self.name = name
@@ -186,3 +190,13 @@ class BaseTask(object):
                     key = ':'.join([ref[i], ref[j]])
                     self.distances[key] = dist
 
+        # validate if all nodes are accesible
+        for i in enum:
+            # destination node doesn't need to have a route to other nodes
+            if ref[i] == self.finish.name:
+                continue
+
+            for j in enum:
+                if i != j and distances[i][j] == N:
+                    raise AssertTaskDataError(
+                        u'There is no route from {} to {}'.format(ref[i], ref[j]))
