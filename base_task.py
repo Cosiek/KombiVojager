@@ -25,10 +25,14 @@ class BaseTask(object):
 
     timeout = None
 
-    # distances can be passed, but all missing distances will be calculated
+    # Distances can be passed, but, if paths_only is false,
+    # then all missing distances will be calculated.
     # uses keys like 'start_node_name:end_node_name'
     # (so no ':' in node names!)
     distances = {}
+    paths_only = False
+    symetric = True  # if true, distance from A to B == B to A unless
+                     # specyfied otherwise in distances
 
     # helper data (calculated)
     all_nodes = {}
@@ -54,19 +58,28 @@ class BaseTask(object):
         for node in self.mid_nodes:
             self.all_nodes[node.name] = node
 
-        # get a list of stop names (including start and finish)
-        stop_names = self.all_nodes.keys()
+        if self.paths_only:
+            # Assumes that some nodes can be reached only by going thru other
+            # nodes. If that is the case, then use Floyd algorithm to find
+            # shortest paths between every two nodes.
+            self.run_Floyd()
+        else:  # calculate missing distances
+            # get a list of stop names (including start and finish)
+            stop_names = self.all_nodes.keys()
 
-        for a, b in permutations(stop_names, 2):
-            key = '%s:%s' % (a, b)
-            self.distances[key] = self.calculate_distance(a, b)
+            for a, b in permutations(stop_names, 2):
+                key = '%s:%s' % (a, b)
+                self.distances[key] = self.calculate_distance(a, b)
 
     def get_distance(self, a, b):
         key = '%s:%s' % (a, b)
         dist = self.distances.get(key)
         if dist is None:
-            dist = self.calculate_distance(a, b)
-            self.distances[key] = dist
+            if self.paths_only:
+                return 1e10000
+            else:
+                dist = self.calculate_distance(a, b)
+                self.distances[key] = dist
         return dist
 
     def calculate_distance(self, a, b):
@@ -139,3 +152,37 @@ class BaseTask(object):
 
         if route_as_set - nodes_as_set:
             raise AssertRouteError(u'Unknown nodes are included to the route')
+
+    def run_Floyd(self):
+        # prepare reference matrix
+        ref = self.all_nodes.keys()
+        size = len(ref)
+        # prepare distance matrix
+        N = 1e10000  # infinity
+        distances = [[N,] * size for i in range(size)]
+
+        for key, dist in self.distances.items():
+            names = key.split(':')
+            idx1 = ref.index(names[0])
+            idx2 = ref.index(names[1])
+            distances[idx1][idx2] = dist
+
+            if self.symetric and distances[idx1][idx2] == N:
+                distances[idx2][idx1] = dist
+
+        # run Floyd algorithm
+        enum = range(size)
+        for i in enum:
+            for j in enum:
+                for k in enum:
+                    if (distances[j][i] + distances[i][k]) < distances[j][k]:
+                        distances[j][k] = (distances[j][i] + distances[i][k])
+
+        # write distances back to distances dict
+        for i in enum:
+            for j in enum:
+                dist = distances[i][j]
+                if dist != N:
+                    key = ':'.join([ref[i], ref[j]])
+                    self.distances[key] = dist
+

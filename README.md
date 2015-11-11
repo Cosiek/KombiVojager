@@ -13,3 +13,11 @@ Od najprostszych, po bardziej złożone.
 5. Mrówkojad
 6. Genetyk
 7. Internauta
+
+Sposób użycia
+=============
+
+`python runner.py test_task_asymetric_distances_only`
+
+gdzie `test_task_asymetric_distances_only` to nazwa przykładowego problemu
+do rozwiązania.
